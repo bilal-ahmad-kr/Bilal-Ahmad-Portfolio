@@ -34,7 +34,7 @@ const About = () => {
           className="text-center mb-16"
         >
           <p className="text-blue-500 font-semibold">About Me</p>
-          <h2 className="text-4xl font-bold mt-3">Get to Know Me</h2>
+          <h2 className="text-4xl font-bold mt-3">Building the Future with Code</h2>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-center">
