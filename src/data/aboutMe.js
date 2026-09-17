@@ -33,7 +33,7 @@ export const knowledgeBase = [
     id: "education",
     keywords: ["education", "study", "studying", "university", "degree", "college", "semester", "student", "iub", "bahawalpur", "graduate"],
     answer:
-      "Bilal is pursuing a BS in Software Engineering at The Islamia University of Bahawalpur (IUB), Pakistan.\n\nHe is currently in his 6th semester and expects to graduate in 2027.",
+      "Bilal is pursuing a BS in Software Engineering at The Islamia University of Bahawalpur (IUB), Pakistan.\n\nHe is currently in his 6th semester and expects to graduate in 2028.",
   },
   {
     id: "projects",
