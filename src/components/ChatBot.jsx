@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaRobot, FaXmark, FaPaperPlane } from "react-icons/fa6";
 import {
   findAnswer,
-  suggestedQuestions,
+  defaultSuggestions,
   welcomeMessage,
 } from "../data/aboutMe";
 
@@ -11,6 +11,8 @@ const ChatBot = () => {
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState("");
+  const [activeSuggestions, setActiveSuggestions] =
+    useState(defaultSuggestions);
   const [messages, setMessages] = useState([
     { id: 1, from: "bot", text: welcomeMessage },
   ]);
@@ -18,35 +20,46 @@ const ChatBot = () => {
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
-  // keep the newest message in view
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing, open]);
 
-  // focus the input whenever the window opens
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 300);
   }, [open]);
+
+  // Formatter for markdown bold text (**text**) inside messages
+  const renderFormattedText = (text) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <strong key={index} className="font-semibold text-slate-900">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return part;
+    });
+  };
 
   const send = (rawText) => {
     const text = (rawText ?? input).trim();
     if (!text || typing) return;
 
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now(), from: "user", text },
-    ]);
+    setMessages((prev) => [...prev, { id: Date.now(), from: "user", text }]);
     setInput("");
     setTyping(true);
 
-    // small delay so it feels like the assistant is thinking
     setTimeout(() => {
+      const result = findAnswer(text);
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 1, from: "bot", text: findAnswer(text) },
+        { id: Date.now() + 1, from: "bot", text: result.answer },
       ]);
+      setActiveSuggestions(result.suggestions || defaultSuggestions);
       setTyping(false);
-    }, 600);
+    }, 400);
   };
 
   const handleKeyDown = (e) => {
@@ -58,7 +71,7 @@ const ChatBot = () => {
 
   return (
     <>
-      {/* ---------- Floating toggle button ---------- */}
+      {/* Floating Toggle Button */}
       <motion.button
         onClick={() => setOpen((o) => !o)}
         whileHover={{ scale: 1.08 }}
@@ -77,14 +90,12 @@ const ChatBot = () => {
             {open ? <FaXmark size={22} /> : <FaRobot size={24} />}
           </motion.span>
         </AnimatePresence>
-
-        {/* gentle attention pulse, only while closed */}
         {!open && (
           <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20" />
         )}
       </motion.button>
 
-      {/* ---------- Chat window ---------- */}
+      {/* Chat Window */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -102,7 +113,7 @@ const ChatBot = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900 text-sm leading-tight">
-                    AI Assistant
+                    Bilal's AI Assistant
                   </h3>
                   <span className="flex items-center gap-1.5 text-xs text-slate-500">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -110,7 +121,6 @@ const ChatBot = () => {
                   </span>
                 </div>
               </div>
-
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close chat"
@@ -120,7 +130,7 @@ const ChatBot = () => {
               </button>
             </div>
 
-            {/* Messages */}
+            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-slate-50/60">
               {messages.map((msg) => (
                 <motion.div
@@ -133,39 +143,34 @@ const ChatBot = () => {
                   }`}
                 >
                   {msg.from === "bot" && (
-                    <div className="w-7 h-7 shrink-0 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                    <div className="w-7 h-7 shrink-0 rounded-full bg-blue-600 flex items-center justify-center text-white mb-0.5">
                       <FaRobot size={13} />
                     </div>
                   )}
-
                   <div
-                    className={`max-w-[78%] px-4 py-2.5 text-sm leading-6 whitespace-pre-line ${
+                    className={`max-w-[80%] px-4 py-2.5 text-sm leading-6 whitespace-pre-line ${
                       msg.from === "user"
                         ? "bg-blue-600 text-white rounded-2xl rounded-br-sm"
-                        : "bg-white text-slate-700 border border-slate-200 rounded-2xl rounded-bl-sm"
+                        : "bg-white text-slate-700 border border-slate-200 rounded-2xl rounded-bl-sm shadow-sm"
                     }`}
                   >
-                    {msg.text}
+                    {renderFormattedText(msg.text)}
                   </div>
                 </motion.div>
               ))}
 
-              {/* Typing indicator */}
+              {/* Typing Indicator */}
               {typing && (
                 <div className="flex items-end gap-2">
                   <div className="w-7 h-7 shrink-0 rounded-full bg-blue-600 flex items-center justify-center text-white">
                     <FaRobot size={13} />
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5">
+                  <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 shadow-sm">
                     {[0, 0.15, 0.3].map((delay) => (
                       <motion.span
                         key={delay}
                         animate={{ y: [0, -4, 0] }}
-                        transition={{
-                          duration: 0.6,
-                          repeat: Infinity,
-                          delay,
-                        }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay }}
                         className="w-1.5 h-1.5 rounded-full bg-slate-400"
                       />
                     ))}
@@ -173,14 +178,14 @@ const ChatBot = () => {
                 </div>
               )}
 
-              {/* Suggested questions — only before the first user message */}
-              {messages.length === 1 && !typing && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {suggestedQuestions.map((q) => (
+              {/* Contextual Suggestion Chips */}
+              {!typing && activeSuggestions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {activeSuggestions.map((q) => (
                     <button
                       key={q}
                       onClick={() => send(q)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                      className="text-xs px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50/80 text-blue-700 hover:bg-blue-100 font-medium transition-colors text-left"
                     >
                       {q}
                     </button>
@@ -191,7 +196,7 @@ const ChatBot = () => {
               <div ref={bottomRef} />
             </div>
 
-            {/* Input */}
+            {/* Input Bar */}
             <div className="border-t border-slate-200 p-3 bg-white">
               <div className="flex items-center gap-2">
                 <input
@@ -199,10 +204,9 @@ const ChatBot = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type your message..."
+                  placeholder="Ask a question..."
                   className="flex-1 bg-slate-100 text-slate-800 placeholder-slate-400 text-sm rounded-full px-4 py-2.5 outline-none border border-transparent focus:border-blue-500 focus:bg-white transition-all"
                 />
-
                 <motion.button
                   onClick={() => send()}
                   disabled={!input.trim() || typing}
